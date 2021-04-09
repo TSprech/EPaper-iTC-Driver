@@ -2,7 +2,9 @@
 #define PDI_ITC_HPP
 
 #include <stdint.h>
+#include <algorithm>
 #include <array>
+#include <type_traits>
 // Include seperator
 #include <SPI.h>
 
@@ -11,8 +13,8 @@ class ITC {
  public:
   //* ────────────────────────────────────────────────────────────────────────────────────────────────────
   enum class Colors : uint8_t {
-    black = 0x0,
-    white = 0x1,
+    white = 0x0,
+    black = 0x1,
     red = 0x2
   };
 
@@ -31,11 +33,11 @@ class ITC {
   void Initialize();
 
   /**
-   * @brief Draw a line from start_x, start_y to end_x, end_y at a specified color value. This uses Bresenham's line algorithm.
-   * @param x The X component of the coordinate pair
-   * @param y The Y component of the coordinate pair
-   * @param color The color the pixels of the line will be drawn in
+   * @brief Sets the current operating temperature of the display.
+   * @param temperature The temperature of the display, required as the display behaves differently dependant on temperature.
    */
+  void Temperature(uint8_t temperature);
+
   void Pixel(uint16_t x, uint16_t y, Colors color);
   // void Pixel(uint8_t x, uint8_t y);
   void Pixel(uint16_t index, Colors color);
@@ -51,24 +53,6 @@ class ITC {
    */
   void FillBuffer(Colors color);
 
-  /**
-   * @brief Draw a vertical line from x, y of specific length at a color value.
-   * @param x The X component of the coordinate pair
-   * @param y The Y component of the coordinate pair
-   * @param length The length of the line to be drawn
-   * @param color The color the pixels of the line will be drawn in
-   */
-  void VerticalLine(uint16_t x, uint16_t y, uint16_t length, Colors color);
-
-  /**
-   * @brief Draw a horizontal line from x, y of specific length at a color value.
-   * @param x The X component of the coordinate pair
-   * @param y The Y component of the coordinate pair
-   * @param length The length of the line to be drawn
-   * @param color The color the pixels of the line will be drawn in
-   */
-  void HorizontalLine(uint16_t x, uint16_t y, uint16_t length, Colors color);
-
   //* ════════════════════════════════════════════════════════════════════════════════════════════════════
  private:
   //* ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -83,6 +67,15 @@ class ITC {
     display_refresh = 0x12,
     power_off = 0x02
   };
+
+  /**
+   * @brief Converts an enum class member into its underlying value.
+   * @param enum_class_member
+   */
+  template <typename enum_type>
+  constexpr auto value(enum_type enum_class_member) {
+    return static_cast<std::underlying_type_t<enum_type>>(enum_class_member);
+  }
 
   // Constant configuration values
   const uint8_t soft_reset_data_ = 0xE;
@@ -100,20 +93,23 @@ class ITC {
   std::array<uint8_t, pixel_buffer_size_>(black_pixel_buffer_);
   std::array<uint8_t, pixel_buffer_size_>(color_pixel_buffer_);
 
-  uint8_t chip_select_pin = 10;
-  uint8_t command_data_pin = 9;
-  uint8_t reset_pin = 8;
+  uint8_t chip_select_pin_ = 0;
+  uint8_t command_data_pin_ = 0;
+  uint8_t reset_pin_ = 0;
+  uint8_t busy_pin_ = 0;
 
   uint16_t XYToIndex(uint16_t x, uint16_t y);
   uint16_t XYToPixel(uint16_t x, uint16_t y);
 
+  void ResetPin(bool state);
   void ChipSelectPin(bool state);
   void CommandDataPin(bool state);
+  bool BusyPin();
 
-  void WriteCommand(uint8_t command_value);
-  void WriteCommand(Registers command_register);
-  void WriteCommand(Registers command_register, uint8_t command_value);
-  void WriteCommand(Registers command_register, uint8_t command_value_1, uint8_t command_value_2);
+  void Write(uint8_t command_value);
+  void Write(Registers command_register);
+  void Write(Registers command_register, uint8_t command_value);
+  void Write(Registers command_register, uint8_t command_value_1, uint8_t command_value_2);
 
   void WriteData(uint8_t data_value);
 };
