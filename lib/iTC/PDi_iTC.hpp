@@ -12,6 +12,11 @@ class ITC {
   //* ════════════════════════════════════════════════════════════════════════════════════════════════════
  public:
   //* ────────────────────────────────────────────────────────────────────────────────────────────────────
+  // The values assigned to each of these pixel color values is important, a common expression used thoughout this library
+  // is "color & 0b1" and "(color & 0b10 >> 1)". The first using 0b1 is used to see if the pixel should be black, hence why
+  // the Colors number for black is 1. The second one using 0b10 checks if the pixel should be a color (red) and then shifts
+  // the result right once to standardize its position like the black pixel code. Note that white is 0 as if neither of the
+  // bits are set, both operations result in 0 which the display interprets as white. Long story short: don't change these.
   enum class Colors : uint8_t {
     white = 0x0,
     black = 0x1,
@@ -68,6 +73,8 @@ class ITC {
     power_off = 0x02
   };
 
+  uint16_t XYToIndex(uint16_t x, uint16_t y);
+
   /**
    * @brief Converts an enum class member into its underlying value.
    * @param enum_class_member
@@ -85,21 +92,18 @@ class ITC {
   const uint8_t panel_settings_second_byte_ = 0x89;
 
 
-  static constexpr uint16_t width_ = 296;
-  static constexpr uint16_t height_ = 152;
+  static constexpr uint16_t width_ = 296; /**< Number of pixels in the X axis of the display */
+  static constexpr uint8_t width_in_bytes_ = 37; // Divide width by 8, might replace with constexpr if possible
+  static constexpr uint16_t height_ = 152; /**< Number of pixels in the Y axis of the display */
+  static constexpr uint16_t pixel_buffer_size_ = 5624; /**< width_ * height_ / 8 to get each buffer size */
 
-  static constexpr uint16_t pixel_buffer_size_ = 5624;
-
-  std::array<uint8_t, pixel_buffer_size_>(black_pixel_buffer_);
-  std::array<uint8_t, pixel_buffer_size_>(color_pixel_buffer_);
+  std::array<uint8_t, pixel_buffer_size_>(black_pixel_buffer_); /**< Used to store pixel buffer 1 (black pixels) */
+  std::array<uint8_t, pixel_buffer_size_>(color_pixel_buffer_); /**< Used to store pixel buffer 2 (color pixels) */
 
   uint8_t chip_select_pin_ = 0;
   uint8_t command_data_pin_ = 0;
   uint8_t reset_pin_ = 0;
   uint8_t busy_pin_ = 0;
-
-  uint16_t XYToIndex(uint16_t x, uint16_t y);
-  uint16_t XYToPixel(uint16_t x, uint16_t y);
 
   void ResetPin(bool state);
   void ChipSelectPin(bool state);
